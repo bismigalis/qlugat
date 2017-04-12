@@ -9,7 +9,9 @@ export PATH=$JAVA_HOME/bin:$PATH
 export BOOT_LOCAL_REPO=$OPENSHIFT_DATA_DIR/boot_repository
 export BOOT_HOME=$OPENSHIFT_DATA_DIR/boot
 
-export DATOMIC_URL="datomic:dev://localhost:15000/firstdb"
+export DATOMIC_URL="datomic:dev://localhost:15000/firstdb?host=${OPENSHIFT_DIY_IP}"
+
+export JAVA_OPTS="-Dh2.bindAddress=${OPENSHIFT_DIY_IP}"
 
 cd $OPENSHIFT_REPO_DIR
 
