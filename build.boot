@@ -59,7 +59,7 @@
          '[adzerk.boot-test :refer :all]
          '[pandeiro.boot-http :refer [serve]]
          '[crisptrutski.boot-cljs-test :refer [test-cljs]]
-
+         '[clojure.java.shell :as shell]
          '[clojure.string :as str]
          '[app.api :as api]
          '[app.stemmer :refer [get-stem]]
@@ -89,10 +89,19 @@
         (target "-d" "js")
   ))
 
+(deftask gzip-main-js
+  "A post task."
+  []
+  (let []
+    (with-post-wrap fileset
+      (shell/sh "gzip" (str (System/getProperty "user.dir") "/js/main.js"))
+      )))
+
 (deftask build-cljs []
   ;;(set-env! :source-paths #(conj % "src-cljs-prod"))
   (comp (cljs :optimizations :advanced)
-        (target "-d" "js")))
+        (target "-d" "js")
+        (gzip-main-js)))
 
 (deftask start-server
   "A post task."
