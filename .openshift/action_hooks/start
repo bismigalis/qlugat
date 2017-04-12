@@ -12,4 +12,7 @@ export BOOT_HOME=$OPENSHIFT_DATA_DIR/boot
 export DATOMIC_URL="datomic:dev://127.8.129.129:15000/firstdb"
 
 cd $OPENSHIFT_REPO_DIR
-$OPENSHIFT_REPO_DIR/diy/boot.sh build-cljs -- start-server |& /usr/bin/logshifter -tag diy &
+
+nohup $OPENSHIFT_REPO_DIR/datomic-pro-0.9.5561/bin/transactor -Xms500m -Xmx500m $OPENSHIFT_REPO_DIR/config/transactor.properties |& /usr/bin/logshifter -tag diy &
+
+nohup $OPENSHIFT_REPO_DIR/diy/boot.sh build-cljs -- start-server |& /usr/bin/logshifter -tag diy &
