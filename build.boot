@@ -65,7 +65,7 @@
          '[app.stemmer :refer [get-stem]]
          '[app.server]
          )
-(def db-uri "datomic:dev://localhost:4334/firstdb")
+(def db-uri "datomic:dev://localhost:15000/firstdb")
 
 (deftask createdb
   "t"
@@ -97,11 +97,12 @@
       (shell/sh "gzip" (str (System/getProperty "user.dir") "/js/main.js"))
       )))
 
+
+
 (deftask build-cljs []
   ;;(set-env! :source-paths #(conj % "src-cljs-prod"))
   (comp (cljs :optimizations :advanced)
-        (target "-d" "js")
-        (gzip-main-js)))
+        (target "-d" "js")))
 
 (deftask start-server
   "A post task."
@@ -113,8 +114,8 @@
 
 (deftask prod []
   (comp
-   ;; (build-cljs)
-   ;; (target "-d" "js")
+   (build-cljs)
+   ;;(gzip-main-js)
    (start-server)
   ))
 

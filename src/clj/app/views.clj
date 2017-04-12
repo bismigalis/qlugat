@@ -25,7 +25,7 @@
              )
 
 
-(def db-uri (or (System/getenv "DATOMIC_URL") "datomic:dev://localhost:4334/firstdb"))
+(def db-uri (or (System/getenv "DATOMIC_URL") "datomic:dev://localhost:15000/firstdb"))
 (def conn (d/connect db-uri))
 
 (defn put-word [request]

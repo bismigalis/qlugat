@@ -18,7 +18,7 @@
            ;;goog.History
            goog.history.Html5History))
 
-(def HOST "http://qlugat.my")
+(def HOST "http://qlugat.my:8080")
 
 (defn get-token []
   (str js/window.location.pathname js/window.location.search))
@@ -51,7 +51,7 @@
   (js/console.log (clj->js x)))
 
 (defn AJAX [url method content]
-  (def XXX content)
+  ;;(def XXX content)
   (let [complete (atom false)
         ch (a/chan 1)]
     (go
