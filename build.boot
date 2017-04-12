@@ -43,7 +43,7 @@
                  [org.clojure/data.json "0.2.6"]
 
                  [crisptrutski/boot-cljs-test "0.3.0"]
-                 [com.google.guava/guava "21.0"]
+                 [com.google.guava/guava "20.0"]
                  ])
 
 

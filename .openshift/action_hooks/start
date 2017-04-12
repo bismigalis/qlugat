@@ -3,4 +3,8 @@
 # script. The application will work only if it binds to
 # $OPENSHIFT_DIY_IP:8080
 #nohup $OPENSHIFT_REPO_DIR/diy/testrubyserver.rb $OPENSHIFT_DIY_IP $OPENSHIFT_REPO_DIR/diy |& /usr/bin/logshifter -tag diy &
-nohup $OPENSHIFT_REPO_DIR/diy/boot.sh build-cljs -- start-server |& /usr/bin/logshifter -tag diy &
+export BOOT_LOCAL_REPO=$OPENSHIFT_DATA_DIR/boot_repository
+export BOOT_HOME=$OPENSHIFT_DATA_DIR/boot
+
+
+$OPENSHIFT_REPO_DIR/diy/boot.sh build-cljs -- start-server |& /usr/bin/logshifter -tag diy &
