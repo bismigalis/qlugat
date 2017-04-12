@@ -13,6 +13,6 @@ export DATOMIC_URL="datomic:dev://localhost:15000/firstdb"
 
 cd $OPENSHIFT_REPO_DIR
 
-nohup $OPENSHIFT_REPO_DIR/datomic-pro-0.9.5561/bin/transactor -Xms500m -Xmx500m $OPENSHIFT_REPO_DIR/config/transactor.properties |& /usr/bin/logshifter -tag diy &
+nohup $OPENSHIFT_REPO_DIR/datomic-pro-0.9.5561/bin/transactor -Xms300m -Xmx300m $OPENSHIFT_REPO_DIR/config/transactor.properties |& /usr/bin/logshifter -tag diy &
 
 nohup $OPENSHIFT_REPO_DIR/diy/boot.sh build-cljs -- start-server |& /usr/bin/logshifter -tag diy &
