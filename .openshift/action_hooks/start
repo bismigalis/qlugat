@@ -11,7 +11,7 @@ export BOOT_HOME=$OPENSHIFT_DATA_DIR/boot
 
 #export DATOMIC_URL="datomic:dev://${OPENSHIFT_DIY_IP}:15000/firstdb"
 
-export JAVA_OPTS="-Dh2.bindAddress=${OPENSHIFT_DIY_IP}"
+#export JAVA_OPTS="-Dh2.bindAddress=${OPENSHIFT_DIY_IP}"
 
 cd $OPENSHIFT_REPO_DIR
 
