@@ -8,7 +8,7 @@
             [app.stemmer :refer [detect-lang get-stem]]
             [app.forms]
             [app.api :as api]
-            [app.config :refer [dev-config]]
+            [app.config :refer [prod-config]]
             )
   (:use [clojure.tools.logging]
         ;;[clj-logging-config.log4j]
@@ -18,7 +18,7 @@
 
 (defn put-word [request]
   (let [{:keys [id article]} (:json-params request)]
-    (api/put-article (:dbspec dev-config) id article))
+    (api/put-article (:dbspec prod-config) id article))
   {:status 200
    :headers {"Content-Type" "application/json; charset=utf-8"}
    :body (json/write-str {})
@@ -29,7 +29,7 @@
 (defn get-json
   [request]
   (let [word (get-in request [:params :word] "")
-        res (api/get-word (:dbspec dev-config) word)]
+        res (api/get-word (:dbspec prod-config) word)]
     (if (empty? res)
       {:status 404
        :headers {"Content-Type" "application/json; charset=utf-8"}
@@ -44,7 +44,7 @@
   (let [token (get-in request [:params :token] "")
         stem  (get-stem token)
         lang  (case (detect-lang token) :ru "ru-crh" :crh "crh-ru")
-        res (api/get-suggestions (:dbspec dev-config) lang (first stem))]
+        res (api/get-suggestions (:dbspec prod-config) lang (first stem))]
     {:status 200
      :headers {"Content-Type" "application/json; charset=utf-8"}
      :body (json/write-str (map :word res))}

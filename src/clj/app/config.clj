@@ -16,4 +16,5 @@
                             :subname     (str (System/getenv "OPENSHIFT_DATA_DIR") "database")
                             :user        "sa"
                             :password    ""
-                            }})
+                            }
+                  })
