@@ -195,17 +195,57 @@
          (subs word (dec accentPos)))
     word))
 
-(defn display-article [word article shorteningPos]
-  ;;(log [word article shorteningPos])
-  (-> article
-      (str/replace "~" (if shorteningPos
-                         (subs word 0 shorteningPos)
-                         word))
-      (str/replace #"(</b>)" "$1 ")
-      (str/replace "; " "<br>")
-      (str/replace "\n" "<br>")
-      (str/replace "◊" "<br>◊<br>")
-      ))
+
+(defn componetize [lines]
+
+
+  )
+
+(defn SeeOther [s]
+  [:a {:style {:cursor :pointer}
+         :on-click (fn [e]
+                     (.preventDefault e)
+                     (a/put! WORDS-CH s)
+                     (get-article s)
+                     )}
+     s])
+
+(defn SeeOthers [s]
+  (let [s (str/replace s #"</?[^>]+>" "")
+        s1 (subs s 0 3)
+        s2 (subs s 3)
+        ]
+  [:div (str s1 " ")
+   (->> (str/split s2 #", ")
+        (map #(vector SeeOther %))
+        (interpose ", "))
+   ]))
+
+
+(defn display-article [word article shortening_pos]
+  ;;(log [word article shortening_pos])
+  (map (fn [x] (if (re-find #"с[р|м]\." x)
+                 [SeeOthers x]
+                 [:div {:dangerouslySetInnerHTML {:__html x}}]))
+       (-> article
+           (str/replace "~" (if shortening_pos
+                              (subs word 0 shortening_pos)
+                              word))
+           ;;(str/replace #"(</b>)" "$1 ")
+           #_(str/replace #"ср\. (.+)"
+                          (fn [[_ x]]
+                            (str "ср. "
+                                 (->> (str/split x #", ")
+                                      (map #(str "<b onclick='alert(\"" % "\")'>" % "</b>"))
+                                      (str/join ", ")
+                                      (apply str)))))
+
+           (str/replace "; " "\n")
+           ;;(str/replace "\n" "<br>")
+           (str/replace "◊" "\n◊\n")
+           (str/split #"\n")
+
+           )))
 
 ;;
 ;; AJAX
@@ -268,7 +308,8 @@
 (defn SubmitButton []
   [:button {:class "btn btn-primary"
             :on-click #(get-article @CURRENT-WORD)}
-   [:span {:class "glyphicon glyphicon-search"}]
+   [:span {:class "glyphicon glyphicon-search"
+           :style {:font-size "20px"}}]
    ])
 
 (defn ClearButton []
@@ -277,13 +318,15 @@
    [:span {:class "glyphicon glyphicon-remove"}]
    ])
 
-(defn Article [{:strs [word shorteningPos] :as w} {:strs [article accentPos] :as a} edit]
+
+(defn Article [{:strs [word shortening_pos] :as w} {:strs [article accent_pos] :as a} edit]
   [:dl
    [:dt
-    [:span (display-word word accentPos)] " "
+    [:span (display-word word accent_pos)] " "
     (if (and edit @AUTH-TOKEN) [EditButton a])]
-   [:dd {:style {:margin-left "1ex"}
-         :dangerouslySetInnerHTML {:__html (display-article word article shorteningPos)}}]])
+   [:dd {:style {:margin-left "1ex"}}
+         (display-article word article shortening_pos)]])
+
 
 (defn DictEntry [dict-entry]
   [:pre {:style {:min-width "50em" :margin-top "1em" :white-space :nowrap}}

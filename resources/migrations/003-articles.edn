@@ -1,0 +1,7 @@
+{:up ["CREATE TABLE article (
+id INT PRIMARY KEY AUTO_INCREMENT,
+word_id INT,
+accent_pos INT,
+article VARCHAR
+);"]
+ :down ["DROP TABLE article;"]}

@@ -1,19 +1,12 @@
 (set-env!
  :source-paths #{"src/clj" "src/cljs" "src/cljc" "resources" "config"}
  ;;:resource-paths #{"resources" "config"}
- :repositories #(conj % ["my.datomic.com" {:url "https://my.datomic.com/repo"
-                                           :username "r.prokopiev@gmail.com"
-                                           :password "822e975a-e02c-4779-ae67-863fede4c218"}])
- :dependencies '[[com.datomic/datomic-pro "0.9.5544"]
-                 [io.pedestal/pedestal.service "0.5.2"]
+ :dependencies '[[io.pedestal/pedestal.service "0.5.2"]
                  [io.pedestal/pedestal.jetty "0.5.2"]
                  [io.pedestal/pedestal.interceptor "0.5.2"]
                  ;;[io.pedestal/pedestal.log "0.5.2"]
-                 [geheimtur "0.3.0"]
-                 ;;[enlive "1.1.6"]
+                 ;;[geheimtur "0.3.0"]
                  [hiccup "1.0.5"]
-                 [org.webjars/webjars-locator "0.27"]
-                 [org.webjars/bootstrap "3.3.7"]
 
                  ;;[clj-logging-config "1.9.12"]
                  [org.clojure/tools.logging "0.3.1"]
@@ -35,7 +28,6 @@
                  [com.cemerick/piggieback "0.2.1"  :scope "test"]
                  [org.clojure/tools.nrepl "0.2.12" :scope "test"]
 
-
                  ;;[org.clojure/clojurescript "1.9.495"]
                  [org.clojure/clojurescript "1.9.229"]
                  [reagent "0.6.0"]
@@ -44,13 +36,19 @@
 
                  [crisptrutski/boot-cljs-test "0.3.0"]
                  [com.google.guava/guava "21.0"]
+
+                 [com.stuartsierra/component "0.3.2"]
+                 [ragtime "0.7.1"]
+                 [org.clojure/tools.namespace "0.2.11"]
+                 [com.h2database/h2 "1.4.191"]
+                 [org.clojure/java.jdbc "0.7.0-alpha3"]
+                 [funcool/clojure.jdbc "0.9.0"]
                  ])
 
 
 
 (require '[boot.cli :refer [defclifn]]
-         '[datomic.api :as d :refer [q db]]
-         '[clojure.core.async :refer (<!!)]
+         ;;'[clojure.core.async :refer (<!!)]
          '[clojure.data.csv :as csv]
          '[clojure.java.io :as io]
          '[adzerk.boot-cljs :refer [cljs]]
@@ -61,28 +59,64 @@
          '[crisptrutski.boot-cljs-test :refer [test-cljs]]
          '[clojure.java.shell :as shell]
          '[clojure.string :as str]
+         '[clojure.tools.namespace.repl :refer [refresh]]
          '[app.api :as api]
          '[app.stemmer :refer [get-stem]]
-         '[app.server]
+         '[app.system :as s]
+         ;;'[app.server]
+         '[ragtime.jdbc :as rjdbc]
+         '[jdbc.core :as jdbc]
+         '[ragtime.repl :refer [migrate]]
+         '[app.config :refer [dev-config]]
          )
-(def db-uri "datomic:dev://localhost:15000/firstdb")
 
-(deftask createdb
-  "t"
+(def ragtime-config {:datastore (rjdbc/sql-database (:dbspec dev-config))
+                     :migrations (rjdbc/load-resources "migrations")})
+
+
+(def system nil)
+
+;; (defn start []
+;;   (alter-var-root #'my-app (constantly (start-my-app))))
+
+
+(defn init-system
+  "Constructs the current development system."
   []
-  (d/create-database db-uri))
+  (alter-var-root #'system
+    (constantly (s/make-dev-system))))
 
-#_(deftask import
-  ""
-  [e entity VAL kw "entity"]
-  (print VAL))
+(defn start
+  "Starts the current development system."
+  []
+  (alter-var-root #'system s/start))
+
+(defn stop
+  "Shuts down and destroys the current development system."
+  []
+  (alter-var-root #'system (fn [s] (when s (s/stop s)))))
+
+#_(defn stop
+  "Shuts down and destroys the current development system."
+  []
+  (alter-var-root #'system s/stop))
+
+(defn go
+  "Initializes the current development system and starts it running."
+  []
+  (init-system)
+  (start))
+
+(defn reset []
+  (stop)
+  (refresh :after `start))
 
 (deftask frontend []
   (comp
         ;;(watch "-i" #"\.cljs$")
         (watch)
         ;;      (show "-f")
-        (reload "-c" "js")
+        (reload)
         (cljs-repl)
         (cljs)
         (speak)
@@ -92,16 +126,27 @@
 (deftask gzip-main-js
   "A post task."
   []
-  (let []
-    (with-post-wrap fileset
-      (shell/sh "gzip" (str (System/getProperty "user.dir") "/js/main.js"))
-      )))
-
+  (let [tmp (tmp-dir!)]
+    (def tmp tmp)
+    (with-pre-wrap fileset
+      (let [f (-> fileset :tree (get "main.js"))]
+        (def f f)
+        (shell/sh "cp"
+                  (.getAbsolutePath (tmp-file f))
+                  (.getAbsolutePath (io/file tmp "main.js"))
+                  )
+        (shell/sh "gzip" (.getAbsolutePath (io/file tmp "main.js")))
+        (commit! (add-asset fileset tmp))
+        ;;fileset
+        )
+      ))
+  )
 
 
 (deftask build-cljs []
   ;;(set-env! :source-paths #(conj % "src-cljs-prod"))
   (comp (cljs :optimizations :advanced)
+        (gzip-main-js)
         (target "-d" "js")))
 
 (deftask start-server
@@ -109,13 +154,13 @@
   []
   (let []
     (with-post-wrap fileset
-      (app.server/start-prod)
+      ;;(app.server/start-prod)
+      (s/start (s/make-prod-system))
       )))
 
 (deftask prod []
   (comp
    (build-cljs)
-   ;;(gzip-main-js)
    (start-server)
   ))
 
@@ -142,40 +187,19 @@
    (jar :main 'animals.uberjar)))
 
 
-
+(comment
 (def crh-file "/home/user/workspace/lugat/old/crh_ru.csv")
-(def ru-file "/home/user/workspace/lugat/new/ru_crh.txt")
-
 (defn import-crh
   ""
   []
-  (let [conn (d/connect db-uri)]
-
-    #_(with-open [file (io/reader crh-file)]
-    (doseq [[word article] (rest (csv/read-csv file))]
-      @(d/transact conn [(api/make-word word article :crh-ru)])
-      ))
-    (with-open [file (io/reader crh-file)]
-      @(d/transact conn (vec (map (fn [[word article]]
-                                        ;(api/make-word word article :crh-ru)
-                                    {:word/word word
-                                     :word/stem (get-stem word)
-                                     :word/dictionary :crh-ru
-                                     :word/articles [{:article/article article}]}
-                                    )
-                                  (rest (csv/read-csv file)))))
-      )
-
+  (with-open [conn (jdbc/connection s/dbspec)]
+      (with-open [file (io/reader crh-file)]
+        (doseq [[idx [word article]] (map-indexed vector (rest (csv/read-csv file)))]
+          (jdbc/execute conn ["INSERT INTO word (id, word, stem, dict, shortening_pos) VALUES (?, ?, ?, ?, ?);" idx word (get-stem word) "crh-ru" nil])
+          (jdbc/execute conn ["INSERT INTO article (id, word_id, accent_pos, article) VALUES (?, ?, ?, ?);" idx idx nil article])
+          ))
   ))
-
-#_(defn retract-ru []
-  (let [conn (d/connect db-uri)
-        ids (d/q '[:find [?e ...] :where [?e :word/dictionary :ru-crh]] (d/db conn))]
-    @(d/transact conn (->> ids
-                           (map (fn [x] [:db.fn/retractEntity x]))
-                           vec))
-    ))
-
+)
 
 (defn get-word [raw]
   (-> raw
@@ -201,42 +225,45 @@
   ([m k v & more]
    (apply assoc-if (assoc-if m k v) more)))
 
+(def ru-file "/home/user/workspace/lugat/new/ru_crh.txt")
 (defn import-ru
   ""
   []
-  (with-open [file (io/reader ru-file)]
-    (let [conn (d/connect db-uri)]
-      (reduce (fn [a [raw-word article _]]
-                      (let [word (get-word raw-word)
-                            stem (get-stem word)
-                            accentPos (get-accent-pos raw-word)
-                            shorteningPos (api/get-shortening-pos raw-word)
-                            ]
-                        (if (contains? a word)
-                          (update-in a [word :word/articles] conj (assoc-if {:article/article article}
-                                                                       :article/accentPos
-                                                                       accentPos))
-                          (assoc a word (-> {:word/word word
-                                             :word/stem stem
-                                             :word/dictionary :ru-crh
-                                             :word/articles [(assoc-if {:article/article article}
-                                                                       :article/accentPos
-                                                                       accentPos)]
+  (with-open [conn (jdbc/connection (:dbspec dev-config))]
+    (with-open [file (io/reader ru-file)]
+      (let [data (reduce (fn [a [raw-word article _]]
+                           (let [word (get-word raw-word)
+                                 stem (get-stem word)
+                                 accent-pos (get-accent-pos raw-word)
+                                 shortening-pos (api/get-shortening-pos raw-word)
+                                 ]
+                             (if (contains? a word)
+                               (update-in a [word :articles] conj (assoc-if {:article article}
+                                                                            :accent_pos
+                                                                            accent-pos))
+                               (assoc a word (-> {:word word
+                                                  :stem stem
+                                                  :dict "ru-crh"
+                                                  :articles [(assoc-if {:article article}
+                                                                       :accent_pos
+                                                                       accent-pos)]
 
 
-                                             }
-                                            (assoc-if :word/shorteningPos shorteningPos)
-                                            ))
-                        )))
-                    {}
-                    (partition 3 (line-seq file))))
-
-    )
-      #_@(d/transact conn (->>
-
-                             (map (fn [[word article _]] (api/make-word word article :ru-crh)))
-                             vec)
-                   )
+                                                  }
+                                                 (assoc-if :shortening_pos shortening-pos)
+                                                 ))
+                               )))
+                         {}
+                         (partition 3 (line-seq file)))]
+        ;;data
+        (doseq [[idx [word word-entry]] (map-indexed vector data)]
+          (let [idx (+ 20000 idx)]
+            (jdbc/execute conn ["UPDATE word SET shortening_pos=? WHERE id=?" (:shortening_pos word-entry) idx])
+            #_(jdbc/execute conn ["INSERT INTO word (id, word, stem, dict, shortening_pos) VALUES (?, ?, ?, ?, ?);" idx word (get-stem word) "ru-crh" (:shortening_pos word-entry)])
+            #_(doseq [{:keys [article accent_pos]}  (:articles word-entry)]
+              (jdbc/execute conn ["INSERT INTO article (word_id, accent_pos, article) VALUES (?, ?, ?);" idx accent_pos article])))
+          )
+      )))
   )
 
 (comment
@@ -253,35 +280,6 @@
                  [[:db/retract id :word/stem "стан iv"]
                   [:db/add id :word/stem "стан"]]))
 
-  #_@(d/transact conn
-                 (->> items
-                      (filter #(str/ends-with? (:word/word %) " IV"))
-                      (map #(vector (:db/id %) (:word/word %)))
-                      ;;(map (fn [[id word]] [id word (str/index-of word "|")]))
-                      (map (fn [[id word]]
-                             [[:db/add id :word/variant 4]
-                              [:db/retract id :word/word word]
-                              [:db/add id :word/word (str/replace word " IV" "")]]
-                             ))
-                      (apply concat)
-
-                      )
-                 )
-
-
-
-  #_@(d/transact conn
-                 (->> items
-                      (filter #(:word/accentPos %))
-
-                      (map (fn [{id :db/id pos :word/accentPos}]
-                             [[:db/retract id :word/accentPos pos]
-                              [:db/add id :word/accentPos (dec pos)]]
-                             ))
-                      (apply concat)
-
-                      )
-                 )
   )
 
 

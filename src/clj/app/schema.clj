@@ -1,5 +1,4 @@
-(ns app.schema
-  (:require [datomic.api :as d]))
+(ns app.schema)
 
 (def users
   [{:db/ident :user/name
