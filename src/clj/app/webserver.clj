@@ -38,7 +38,7 @@
               ::http/type           :jetty
               ::http/port           8080
               ::http/host           (or (System/getenv "OPENSHIFT_DIY_IP")
-                                        ("localhost"))})
+                                        "localhost")})
 
 (defn run-dev
   [& args]

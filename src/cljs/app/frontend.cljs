@@ -18,7 +18,7 @@
            ;;goog.History
            goog.history.Html5History))
 
-(def HOST "http://qlugat.my:8080")
+(def HOST "" #_"http://qlugat.my:8080")
 
 (defn get-token []
   (str js/window.location.pathname js/window.location.search))
