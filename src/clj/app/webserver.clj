@@ -37,7 +37,8 @@
               ::http/file-path      (str (System/getProperty "user.dir") "/js")
               ::http/type           :jetty
               ::http/port           8080
-              ::http/host           (or (System/getenv "OPENSHIFT_DIY_IP") ("localhost")})
+              ::http/host           (or (System/getenv "OPENSHIFT_DIY_IP")
+                                        ("localhost"))})
 
 (defn run-dev
   [& args]
