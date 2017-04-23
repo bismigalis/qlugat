@@ -55,7 +55,7 @@
   (let [complete (atom false)
         ch (a/chan 1)]
     (go
-      (<! (a/timeout 400))
+      (<! (a/timeout 500))
       (if-not @complete (reset! LOADING true)))
 
     (XhrIo.send url

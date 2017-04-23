@@ -32,13 +32,13 @@
     }))
 
 (def service {:env                  :prod
-              ::http/secure-headers {:content-security-policy-settings {}}
+              ::http/secure-headers {:content-security-policy-settings {}
+                                     :frame-options-settings "ALLOW"}
               ::http/routes         routes
               ::http/file-path      (str (System/getProperty "user.dir") "/js")
               ::http/type           :jetty
               ::http/port           8080
-              ::http/host           (or (System/getenv "OPENSHIFT_DIY_IP")
-                                        "localhost")})
+              ::http/host           (or (System/getenv "OPENSHIFT_DIY_IP") "localhost")})
 
 (defn run-dev
   [& args]
