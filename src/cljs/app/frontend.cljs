@@ -43,7 +43,8 @@
 (defonce MODAL (r/atom false))
 (defonce AUTH-TOKEN (atom false))
 
-(def WORDS-CH (a/chan (a/dropping-buffer 1)))
+;;(def WORDS-CH (a/chan (a/dropping-buffer 1)))
+(def WORDS-CH (a/chan))
 (def CMD-CH (a/chan))
 
 
@@ -213,7 +214,7 @@
 (defn SeeOthers [s]
   (let [s (str/replace s #"</?[^>]+>" "")
         s1 (subs s 0 3)
-        s2 (subs s 3)
+        s2 (str/trim (subs s 3))
         ]
   [:div (str s1 " ")
    (->> (str/split s2 #", ")
