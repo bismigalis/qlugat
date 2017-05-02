@@ -30,7 +30,7 @@
   [request]
   (let [word (get-in request [:params :word] "")
         found-word (api/get-word (:dbspec prod-config) word)]
-    (if-not (= word (:word found-word))
+    #_(if-not (= word (:word found-word))
       (api/log-word (:logdb request) word (:word found-word)))
     (if (empty? found-word)
       (do
