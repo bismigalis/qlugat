@@ -67,11 +67,11 @@
       http/start))
 
 (defn start-prod
-  [webcomponent]
+  [{:keys [logdb]}]
   (println "\nCreating your [PROD] server...")
   (-> service ;; start with production configuration
       http/default-interceptors
-      my-default-interceptors
+      ((fn [service] (my-default-interceptors service logdb)))
       http/create-server
       http/start))
 

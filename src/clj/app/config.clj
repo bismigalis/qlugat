@@ -25,6 +25,6 @@
                             :user        "sa"
                             :password    ""
                             }
-                  :logdb {:path (System/getenv "OPENSHIFT_DATA_DIR")
+                  :logdb {:path (or (System/getenv "OPENSHIFT_DATA_DIR") "/tmp")
                           :dbname "logdb"}
                   })

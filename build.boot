@@ -159,23 +159,21 @@
   []
   (let []
     (with-post-wrap fileset
-      ;;(app.server/start-prod)
       (app.system/start (app.system/make-prod-system))
       )))
 
-(deftask start-server
+(deftask start-dev-server
   "A post task."
   []
   (let []
     (with-post-wrap fileset
-      ;;(app.server/start-prod)
       (app.system/start (app.system/make-dev-system))
       )))
 
 (deftask prod []
   (comp
    (build-cljs)
-   (start-server)
+   (start-prod-server)
   ))
 
 
