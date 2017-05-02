@@ -47,8 +47,7 @@
 (defonce MODAL (r/atom false))
 
 (defonce AUTH-TOKEN (atom false))
-(defonce LOADING (r/atom false))
-
+(defonce LOADING (r/atom true))
 
 
 
@@ -375,7 +374,7 @@
   )
 
 (defn Loading []
-  [:div "Loading..."]
+  [:div [:br] "Loading..."]
   )
 
 (defn Modal [article]

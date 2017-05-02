@@ -30,7 +30,7 @@
   [request]
   (let [word (get-in request [:params :word] "")
         found-word (api/get-word (:dbspec prod-config) word)]
-    (if-not (= word found-word)
+    (if-not (= word (:word found-word))
       (api/log-word (:logdb request) word (:word found-word)))
     (if (empty? found-word)
       (do
@@ -71,7 +71,7 @@
               [:meta {:charset "utf-8"}]
               [:link {:rel :stylesheet
                       :href "https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css"}]
-              [:style "* {font-family: monospace;}\n dl {margin-bottom:0;}"]
+              [:style "* {font-family: monospace;}\n dl {margin-bottom:1ex;}"]
               ]
              [:body
               [:div {:id "container"}]
