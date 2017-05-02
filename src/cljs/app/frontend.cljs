@@ -47,7 +47,7 @@
 (defonce MODAL (r/atom false))
 
 (defonce AUTH-TOKEN (atom false))
-(defonce LOADING (r/atom true))
+(defonce LOADING (r/atom false))
 
 
 
@@ -357,6 +357,28 @@
    [:dd {:style {:margin-left "1ex"}}
          (display-article word article shortening_pos main-article)]])
 
+(defn Loading []
+  [:div
+   [:div {:style {:position :absolute
+                  :left 0
+                  :top 0
+                  :width "100%"
+                  :height "100%"
+                  :background-color :white
+                  :opacity ".5"
+                 }}]
+   [:div {:style {:position :absolute
+                  :top "50%"
+                  :left "50%"
+                  :width "40px"
+                  :height "40px"
+                  :border "5px solid #f3f3f3"
+                  :border-top "5px solid #3498db"
+                  :border-radius "50%"
+                  :animation "spin 2s linear infinite"
+                  }}]]
+  )
+
 
 (defn DictEntry [dict-entry]
   [:div
@@ -373,9 +395,6 @@
    ]
   )
 
-(defn Loading []
-  [:div [:br] "Loading..."]
-  )
 
 (defn Modal [article]
   [:div
@@ -500,7 +519,8 @@
   (let [;;cur-word (r/atom "")
         ]
     (fn []
-      [:div
+      [:div {:style {:position :relative}}
+       (if @LOADING [Loading])
        [:table
         [:tbody
          [:tr {:style {:vertical-align :top}}
@@ -510,9 +530,8 @@
             ;;[:span {:class "input-group-btn"} [ClearButton]]
             [InputWord]
             [:span {:class "input-group-btn"} [SubmitButton]]]
-           (if @LOADING
-             [Loading]
-             (if-not (empty? @DICT-ENTRY) [DictEntry @DICT-ENTRY]))
+
+           (if-not (empty? @DICT-ENTRY) [DictEntry @DICT-ENTRY])
            ]
           ]
          #_[:tr {:style {:vertical-align :top}}

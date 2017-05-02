@@ -71,7 +71,11 @@
               [:meta {:charset "utf-8"}]
               [:link {:rel :stylesheet
                       :href "https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css"}]
-              [:style "* {font-family: monospace;}\n dl {margin-bottom:1ex;}"]
+              [:style "* {font-family: monospace;}\n dl {margin-bottom:1ex;}
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}"]
               ]
              [:body
               [:div {:id "container"}]
