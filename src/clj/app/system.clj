@@ -2,40 +2,23 @@
   (:require [com.stuartsierra.component :as c]
             [app.webserver :refer [new-webserver]]
             [app.sqldatabase :refer [new-sqldatabase]]
+            [app.logdb :refer [new-logdb]]
             [app.config :refer [dev-config prod-config]]
             ))
 
 
-#_(defrecord Database [host port connection]
-  c/Lifecycle
-
-  (start [component]
-    (println ";; Starting database")
-    (let [conn (connect-to-database host port)]
-      ;; Return an updated version of the component with
-      ;; the run-time state assoc'd in.
-      (assoc component :connection conn)))
-
-  (stop [component]
-    (println ";; Stopping database")
-    (.close connection)
-    ;; Return the component, optionally modified. Remember that if you
-    ;; dissoc one of a record's base fields, you get a plain map.
-    (assoc component :connection nil)))
-
-#_(defn new-database [config]
-  (map->Database {:host host :port port}))
-
-
-
-
 (defn make-system [config]
   (let []
-    (c/system-map
-     ;;:db (new-sqldatabase config)
-     ;;:web (c/using (new-webserver config) [:db])
-     :web (new-webserver config)
-     )))
+    (-> (c/system-map
+         ;;:db (new-sqldatabase config)
+         :web (new-webserver config)
+         :logdb (new-logdb config)
+         )
+        (c/system-using
+           {:web [:logdb]
+            })
+        )))
+
 
 (defn make-dev-system []
   (make-system dev-config))

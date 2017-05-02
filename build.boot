@@ -31,6 +31,7 @@
                  ;;[org.clojure/clojurescript "1.9.495"]
                  [org.clojure/clojurescript "1.9.229"]
                  [reagent "0.6.0"]
+                 [re-frame "0.9.2"]
                  [org.clojure/core.async      "0.3.441"]
                  [org.clojure/data.json "0.2.6"]
 
@@ -40,9 +41,12 @@
                  [com.stuartsierra/component "0.3.2"]
                  [ragtime "0.7.1"]
                  [org.clojure/tools.namespace "0.2.11"]
+                 [samestep/boot-refresh "0.1.0" :scope "test"]
                  [com.h2database/h2 "1.4.191"]
+                 [com.sleepycat/je "5.0.73"]
                  [org.clojure/java.jdbc "0.7.0-alpha3"]
                  [funcool/clojure.jdbc "0.9.0"]
+                 [spyscope "0.1.6"]
                  ])
 
 
@@ -59,16 +63,24 @@
          '[crisptrutski.boot-cljs-test :refer [test-cljs]]
          '[clojure.java.shell :as shell]
          '[clojure.string :as str]
-         '[clojure.tools.namespace.repl :refer [refresh]]
+         '[clojure.tools.namespace.repl :refer [refresh set-refresh-dirs]]
+         ;;'[samestep.boot-refresh :refer [refresh]]
          '[app.api :as api]
          '[app.stemmer :refer [get-stem]]
-         '[app.system :as s]
+         '[app.system]
          ;;'[app.server]
          '[ragtime.jdbc :as rjdbc]
          '[jdbc.core :as jdbc]
          '[ragtime.repl :refer [migrate]]
          '[app.config :refer [dev-config]]
+         '[spyscope.core]
          )
+
+(boot.core/load-data-readers!)
+
+(def dirs (get-env :directories))
+(apply set-refresh-dirs dirs)
+
 
 (def ragtime-config {:datastore (rjdbc/sql-database (:dbspec dev-config))
                      :migrations (rjdbc/load-resources "migrations")})
@@ -83,23 +95,21 @@
 (defn init-system
   "Constructs the current development system."
   []
-  (alter-var-root #'system
-    (constantly (s/make-dev-system))))
+  (alter-var-root #'system (constantly (app.system/make-dev-system))))
 
 (defn start
   "Starts the current development system."
   []
-  (alter-var-root #'system s/start))
+  (alter-var-root #'system app.system/start))
 
 (defn stop
   "Shuts down and destroys the current development system."
   []
-  (alter-var-root #'system (fn [s] (when s (s/stop s)))))
+  (alter-var-root #'system (fn [s] (when s (app.system/stop s)))))
 
-#_(defn stop
-  "Shuts down and destroys the current development system."
-  []
-  (alter-var-root #'system s/stop))
+(defn reset []
+  (stop)
+  (refresh :after `start))
 
 (defn go
   "Initializes the current development system and starts it running."
@@ -107,17 +117,12 @@
   (init-system)
   (start))
 
-(defn reset []
-  (stop)
-  (refresh :after `start))
+
 
 (deftask frontend []
-  (comp
-        ;;(watch "-i" #"\.cljs$")
-        (watch)
-        ;;      (show "-f")
+  (comp (watch)
         (reload)
-        (cljs-repl)
+        (cljs-repl-env)
         (cljs)
         (speak)
         (target "-d" "js")
@@ -155,7 +160,7 @@
   (let []
     (with-post-wrap fileset
       ;;(app.server/start-prod)
-      (s/start (s/make-prod-system))
+      (app.system/start (app.system/make-dev-system))
       )))
 
 (deftask prod []
@@ -186,13 +191,12 @@
    (uber)
    (jar :main 'animals.uberjar)))
 
-
 (comment
 (def crh-file "/home/user/workspace/lugat/old/crh_ru.csv")
 (defn import-crh
   ""
   []
-  (with-open [conn (jdbc/connection s/dbspec)]
+  (with-open [conn (jdbc/connection app.system/dbspec)]
       (with-open [file (io/reader crh-file)]
         (doseq [[idx [word article]] (map-indexed vector (rest (csv/read-csv file)))]
           (jdbc/execute conn ["INSERT INTO word (id, word, stem, dict, shortening_pos) VALUES (?, ?, ?, ?, ?);" idx word (get-stem word) "crh-ru" nil])
@@ -287,3 +291,8 @@
   [a awesome bool "Whether you want this app to be awesome or not. (Default true)"]
   (println "Named parameters " *opts*)
   (println "List of arguments " *args*))
+
+
+
+#_(defn getEntry [str]
+  (new DatabaseEntry (.getBytes str "UTF-8")))

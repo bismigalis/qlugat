@@ -13,6 +13,8 @@
                           :user        "sa"
                           :password    ""
                            }
+                 :logdb {:path "/tmp"
+                          :dbname "logdb"}
 
                  })
 
@@ -23,4 +25,6 @@
                             :user        "sa"
                             :password    ""
                             }
+                  :logdb {:path (System/getenv "OPENSHIFT_DATA_DIR")
+                          :dbname "logdb"}
                   })

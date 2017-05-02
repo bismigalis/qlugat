@@ -2,8 +2,11 @@
   (:require [app.common :as c]
             [app.dictionary :as d]
             [app.stemmer :refer [get-stem detect-lang]]
+            [app.subscriptions]
+            [app.queries]
 
             [reagent.core :as r]
+            [re-frame.core :as rf]
             [cljs.core.async :as a]
             [clojure.string :as str]
 
@@ -15,6 +18,7 @@
                    [cljs.core.async.macros :refer [go go-loop alt!]])
 
   (:import goog.net.XhrIo
+           goog.net.Cookies
            ;;goog.History
            goog.history.Html5History))
 
@@ -37,11 +41,16 @@
 (defonce SUGGEST-DB (atom {}))
 (defonce LIST (r/atom []))
 (defonce POS (r/atom -1))
-(defonce CURRENT-WORD (atom ""))
+;;(defonce CURRENT-WORD (atom ""))
 (defonce DICT-ENTRY (r/atom {}))
-(defonce LOADING (r/atom false))
+(defonce OTHER-DICT-ENTRY (r/atom {}))
 (defonce MODAL (r/atom false))
+
 (defonce AUTH-TOKEN (atom false))
+(defonce LOADING (r/atom false))
+
+
+
 
 ;;(def WORDS-CH (a/chan (a/dropping-buffer 1)))
 (def WORDS-CH (a/chan))
@@ -119,11 +128,12 @@
   [stem len]
   (let [f (if (<= len 4)
             ;;(fn [x] (filter #(<= (count %) 4) x))
-            (partial take 16)
+            (partial take 20)
             identity)
         l (vec (f (d/get-list-by-token @SUGGEST-DB stem)))]
     (reset! POS (if (empty? l) -1 0))
     (reset! DICT-ENTRY {})
+    (reset! OTHER-DICT-ENTRY {})
     (reset! LIST l)
     ))
 
@@ -142,24 +152,28 @@
         (swap! SUGGEST-DB d/set-list-by-letter letter content))
       )))
 
+
 (defn get-word-by-pos [pos]
   (get-in @LIST [pos :word]))
 
+
 (defn get-article [word]
   (go (if (count word)
-        (let [res (<! (GET (str HOST "/get_json?word=" word)))
-              status (:status res)
-              content (:content res)]
-          (case status
-            200 (do (reset! DICT-ENTRY content)
-                    (reset! CURRENT-WORD word)
-                    )
-            404 (do (reset! DICT-ENTRY {})
-                    (reset! CURRENT-WORD "")
-                    #_(.focus (.getElementById js/document "search-input")))
-            )
-          (.focus (.getElementById js/document "search-input"))
+        (let [{:keys [status content]} (<! (GET (str HOST "/get_json?word=" word)))]
+          (reset! DICT-ENTRY (case status
+                               200 content
+                               404 {}))
+          (reset! OTHER-DICT-ENTRY {})
+          ;;(.focus (.getElementById js/document "search-input"))
           ))))
+
+(defn get-other-article [word]
+  (go (let [{:keys [status content]} (<! (GET (str HOST "/get_json?word=" word)))]
+        (reset! OTHER-DICT-ENTRY (case status
+                                   200 content
+                                   404 {}))
+          )))
+
 
 ;; update wordlist widget when edit word in input widget
 (go-loop []
@@ -171,7 +185,8 @@
              (not (get @SUGGEST-DB letter)))
       (a/<! (update-suggest-db letter)))
     (update-wordlist s len)
-    (reset! CURRENT-WORD w)
+    ;;(reset! CURRENT-WORD w)
+    (rf/dispatch [:set-current-word w])
     )
   (recur))
 
@@ -197,37 +212,48 @@
     word))
 
 
-(defn componetize [lines]
-
-
-  )
-
 (defn SeeOther [s]
-  [:a {:style {:cursor :pointer}
-         :on-click (fn [e]
-                     (.preventDefault e)
-                     (a/put! WORDS-CH s)
-                     (get-article s)
-                     )}
-     s])
+  [:a {
+       :style {:cursor :pointer}
+       :on-click (fn [e]
+                   (.preventDefault e)
+                   (get-article s))}
+   s])
 
-(defn SeeOthers [s]
-  (let [s (str/replace s #"</?[^>]+>" "")
-        s1 (subs s 0 3)
-        s2 (str/trim (subs s 3))
+
+(defn CompareOther [s]
+    [:a {
+       :style {:cursor :pointer}
+       :on-click (fn [e]
+                   (.preventDefault e)
+                   (get-other-article s))}
+   s])
+
+
+(defn SeeOtherLine [pre inside post component main-article]
+  (let [;;s (str/replace s #"</?[^>]+>" "")
+        ;;s1 (subs s 0 3)
+        ;;s2 (str/trim (subs s 3))
         ]
-  [:div (str s1 " ")
-   (->> (str/split s2 #", ")
-        (map #(vector SeeOther %))
-        (interpose ", "))
-   ]))
+    (if main-article
+      [:div
+       (str pre inside " ")
+       (->> (str/split (str/trim post) #", ")
+            (map (fn [word] ^{:key word} [component word]))
+            (interpose ", "))
+       ])))
 
 
-(defn display-article [word article shortening_pos]
+
+(defn display-article [word article shortening_pos main-article]
   ;;(log [word article shortening_pos])
-  (map (fn [x] (if (re-find #"с[р|м]\." x)
-                 [SeeOthers x]
-                 [:div {:dangerouslySetInnerHTML {:__html x}}]))
+  (map (fn [line]
+         (let [[_ pre inside post] (re-matches #"(.*)(с[р|м]\.)(.+)" line)]
+           (case inside
+             "ср." ^{:key line} [SeeOtherLine pre inside post CompareOther main-article]
+             "см." ^{:key line} [SeeOtherLine pre inside post SeeOther main-article]
+             ^{:key line} [:div {:dangerouslySetInnerHTML {:__html line}}]))
+         )
        (-> article
            (str/replace "~" (if shortening_pos
                               (subs word 0 shortening_pos)
@@ -258,7 +284,7 @@
         (do
           ;;(cljs.pprint/pprint (:content res))
           ;;(log (get @word "word"))
-          (get-article @CURRENT-WORD)
+          (get-article @(rf/subscribe [:get-current-word]))
           (reset! article false)
           ))
 
@@ -268,7 +294,7 @@
 ;; UI
 ;;
 
-(defn SuggestList [words cur-word]
+(defn SuggestList [words]
   [:ul {:class "word-list"
         :style {:margin "0 1ex 0 0"
                 :padding 0
@@ -281,22 +307,23 @@
                 }
         }
    (if-not (empty? words)
-     (doall (map-indexed (fn [i x]
-                           (let [active (= i @POS)
-                                 style {:padding "0 .5ex"}]
-                             [:li {:style (if active
-                                            (merge style {:color :white :background-color "#000080"})
-                                            style)
-                                   :key (:word x)
-                                   ;;:value (:word x)
-                                   :on-click (fn []
-                                               (reset! POS i)
-                                               (reset! cur-word (:word x))
-                                               (get-article (:word x))
-                                               )
-                                   }
-                              (:word x)]))
-                         words)))
+     (doall
+      (map-indexed
+       (fn [i x]
+         (let [active (= i @POS)
+               style {:padding "0 .5ex" :cursor :pointer}]
+           [:li {:style (if active
+                          (merge style {:color :white :background-color "#000080"})
+                          style)
+                 :key (:word x)
+                 ;;:value (:word x)
+                 :on-click (fn []
+                             (reset! POS i)
+                             (get-article (:word x))
+                             )
+                 }
+            (:word x)]))
+       words)))
    ])
 
 (defn EditButton [article]
@@ -308,7 +335,7 @@
 
 (defn SubmitButton []
   [:button {:class "btn btn-primary"
-            :on-click #(get-article @CURRENT-WORD)}
+            :on-click #(get-article @(rf/subscribe [:get-current-word]))}
    [:span {:class "glyphicon glyphicon-search"
            :style {:font-size "20px"}}]
    ])
@@ -320,19 +347,30 @@
    ])
 
 
-(defn Article [{:strs [word shortening_pos] :as w} {:strs [article accent_pos] :as a} edit]
+(defn Article [{:strs [word shortening_pos] :as w}
+               {:strs [article accent_pos] :as a}
+               edit
+               main-article]
   [:dl
    [:dt
     [:span (display-word word accent_pos)] " "
     (if (and edit @AUTH-TOKEN) [EditButton a])]
    [:dd {:style {:margin-left "1ex"}}
-         (display-article word article shortening_pos)]])
+         (display-article word article shortening_pos main-article)]])
 
 
 (defn DictEntry [dict-entry]
-  [:pre {:style {:min-width "50em" :margin-top "1em" :white-space :nowrap}}
-   (for [article (get dict-entry "articles")]
-     ^{:key (get article "id")} [Article dict-entry article true])
+  [:div
+   [:pre {:style {:min-width "50em" :margin-top "1em" :white-space :nowrap}}
+    (doall (for [article (get dict-entry "articles")]
+             ^{:key (get article "id")} [Article dict-entry article true true]))
+    ]
+   (let [dict-entry @OTHER-DICT-ENTRY]
+     (if-not (empty? dict-entry)
+       [:pre {:style {:min-width "50em" :margin ".5em 0 0 1em" :white-space :nowrap}}
+        (doall (for [article (get dict-entry "articles")]
+                 ^{:key (get article "id")} [Article dict-entry article false false]))
+        ]))
    ]
   )
 
@@ -372,18 +410,19 @@
       ]]]]]
   )
 
-(defn InputWord [cur-word]
+(defn InputWord []
   [:input
        {:type :search
         :auto-focus true
         :id "search-input"
         :class :form-control
-        :value @cur-word
-        :on-change #(do (reset! cur-word (.-target.value %))
+        :value @(rf/subscribe [:get-current-word])
+        :on-change #(do #_(reset! cur-word (.-target.value %))
+                        (rf/dispatch [:set-current-word (.-target.value %)])
                         (a/put! WORDS-CH (.-target.value %)))
         :on-key-down (fn [e]
                         (case (.-keyCode e)
-                          13 (get-article (if (> @POS -1) (get-word-by-pos @POS) @CURRENT-WORD))
+                          13 (get-article (if (> @POS -1) (get-word-by-pos @POS) @(rf/subscribe [:get-current-word])))
                           38 (if (> @POS 0) (swap! POS dec))
                           40 (if (< (inc @POS) (count @LIST)) (swap! POS inc))
                           ""
@@ -458,18 +497,19 @@
     ))
 
 
-(defn Dictionary []
-  (let [cur-word (r/atom "")]
+(defn DictionaryPage []
+  (let [;;cur-word (r/atom "")
+        ]
     (fn []
       [:div
        [:table
         [:tbody
          [:tr {:style {:vertical-align :top}}
-          [:td [SuggestList @LIST cur-word]]
+          [:td [SuggestList @LIST]]
           [:td {:class "form-inline"}
            [:div {:class "input-group"}
             ;;[:span {:class "input-group-btn"} [ClearButton]]
-            [InputWord cur-word]
+            [InputWord]
             [:span {:class "input-group-btn"} [SubmitButton]]]
            (if @LOADING
              [Loading]
@@ -482,7 +522,7 @@
             ]
          ]
         ]
-       ;;[:div (clj->js @AUTH-TOKEN)]
+       ;;[:div (clj->js @OTHER-DICT-ENTRY)]
        (if @MODAL [Modal MODAL])
        ]
       )))
@@ -493,12 +533,14 @@
    ;;[Link "" "Home"]
    ;;[Link "login" "Login"]
    (case @ROUTE
-     "" [Dictionary]
+     "" [DictionaryPage]
      "login" [LoginForm]
   )])
 
 (defn main []
   ;;(hook-browser-navigation!)
+  (reset! AUTH-TOKEN (.get (Cookies. js/document) "auth-token"))
+  (rf/dispatch-sync [:initialize])
   (r/render-component [App]
                       (js/document.getElementById "container"))
   ;;(events/removeAll js/document)

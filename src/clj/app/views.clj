@@ -29,14 +29,17 @@
 (defn get-json
   [request]
   (let [word (get-in request [:params :word] "")
-        res (api/get-word (:dbspec prod-config) word)]
-    (if (empty? res)
-      {:status 404
-       :headers {"Content-Type" "application/json; charset=utf-8"}
-       :body (json/write-str {:message "Word not found"})}
+        found-word (api/get-word (:dbspec prod-config) word)]
+    (api/log-word (:logdb request) word (:word found-word))
+    (if (empty? found-word)
+      (do
+        {:status 404
+         :headers {"Content-Type" "application/json; charset=utf-8"}
+         :body (json/write-str {:message "Word not found"})})
+
       {:status 200
        :headers {"Content-Type" "application/json; charset=utf-8"}
-       :body (json/write-str res)}
+       :body (json/write-str found-word)}
       )))
 
 
@@ -50,6 +53,12 @@
      :body (json/write-str (map :word res))}
 ))
 
+(defn missed-words [request]
+  {:status 200
+   :headers {"Content-Type" "application/json; charset=utf-8"}
+   :body (json/write-str {:words (api/get-missed-words (:logdb request))})
+   })
+
 (defn index-page
   [request]
   (let []
@@ -60,7 +69,9 @@
              [:head
               [:meta {:charset "utf-8"}]
               [:link {:rel :stylesheet
-                      :href "https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css"}]]
+                      :href "https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css"}]
+              [:style "* {font-family: monospace;}\n dl {margin-bottom:0;}"]
+              ]
              [:body
               [:div {:id "container"}]
               [:script {:src "app.js"}]
@@ -78,7 +89,8 @@
     (let [data (:json-params request)]
       (if (valid-credentials? data)
         {:status 200
-         :headers {"Content-Type" "application/json; charset=utf-8"}
+         :headers {"Content-Type" "application/json; charset=utf-8"
+                   "Set-Cookie" (str "auth-token=" (get users (:username data)))}
          :body (json/write-str {:token (get users (:username data))})}
         {:status 401
          :headers {"Content-Type" "application/json; charset=utf-8"}
