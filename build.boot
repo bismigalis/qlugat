@@ -154,6 +154,15 @@
         (gzip-main-js)
         (target "-d" "js")))
 
+(deftask start-prod-server
+  "A post task."
+  []
+  (let []
+    (with-post-wrap fileset
+      ;;(app.server/start-prod)
+      (app.system/start (app.system/make-prod-system))
+      )))
+
 (deftask start-server
   "A post task."
   []
