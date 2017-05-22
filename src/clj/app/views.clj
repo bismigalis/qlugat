@@ -74,7 +74,7 @@
               [:link {:rel :stylesheet
                       :href "https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css"}]
               [:style "* {font-family: monospace;}\n dl {margin-bottom:1ex;}
-stress {color: crismon;font-style: italic;}
+stress {color: crimson;font-style: italic;}
 @keyframes spin {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }

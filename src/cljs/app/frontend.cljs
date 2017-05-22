@@ -12,7 +12,8 @@
    [app.state :as s]
 
    [lib.log :refer [log]]
-))
+   )
+  (:import goog.net.Cookies))
 
 
 (defn get-token []
@@ -66,6 +67,7 @@
        ])))
 
 (defn main []
+  (reset! s/AUTH-TOKEN (.get (Cookies. js/document) "auth-token"))
   (accountant/configure-navigation!
    {:nav-handler (fn [path] ;;(1)
                    (let [match (bidi/match-route app-routes path) ;;(2)
@@ -78,14 +80,12 @@
     :path-exists? (fn [path] (boolean (bidi/match-route app-routes path)))})
 
   (rf/dispatch-sync [:initialize])
-  (accountant/dispatch-current!) ;;(6)
+  (accountant/dispatch-current!)
   (r/render-component [App] (. js/document (getElementById "container")))
   )
 
 #_(defn main []
   ;;(hook-browser-navigation!)
-  (reset! AUTH-TOKEN (.get (Cookies. js/document) "auth-token"))
-
   (r/render-component [App]
                       (js/document.getElementById "container"))
   ;;(events/removeAll js/document)

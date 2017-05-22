@@ -24,17 +24,7 @@
   (:require-macros [reagent.ratom :refer [reaction]]
                    [cljs.core.async.macros :refer [go go-loop alt!]])
 
-  (:import goog.net.Cookies
-           ;;goog.History
-           goog.history.Html5History))
-
-
-
-
-
-
-
-
+  (:import goog.history.Html5History))
 
 ;; (defn handle-url-change [e]
 ;;   ;; log the event object to console for inspection
