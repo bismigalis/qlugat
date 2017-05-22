@@ -14,7 +14,8 @@
         ;;[clj-logging-config.log4j]
         )
   )
-(def users {"ruslan" "f00d644181e880b6107c06a4750cc74f"})
+(def users {"ruslan" "f00d644181e880b6107c06a4750cc74f"
+            "alessandro" "6a01bfa30172639e770a6aacb78a3ed4"})
 
 (defn put-word [request]
   (let [{:keys [id article]} (:json-params request)]
@@ -68,10 +69,12 @@
      :body (html
             [:html
              [:head
+              [:base {:href "/"}]
               [:meta {:charset "utf-8"}]
               [:link {:rel :stylesheet
                       :href "https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css"}]
               [:style "* {font-family: monospace;}\n dl {margin-bottom:1ex;}
+stress {color: crismon;font-style: italic;}
 @keyframes spin {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
@@ -79,7 +82,7 @@
               ]
              [:body
               [:div {:id "container"}]
-              [:script {:src "app.js"}]
+              [:script {:src "/app.js"}]
               ]])}))
 
 

@@ -27,15 +27,17 @@
 
 
 (def routes (route/expand-routes
-  #{["/"            :get [views/index-page] :route-name :home]
-    ["/get_json"    :get [views/get-json] :route-name :get-json]
-    ["/suggest"     :get [views/suggest-handler] :route-name :suggest-handler]
-    ["/edit_word"   :put [interceptors/auth views/put-word] :route-name :put-word]
-    ["/login"       :get  views/index-page :route-name :login]
-    ["/login"       :post [views/login-post] :route-name :login-post]
-    ["/missed-words" :get [views/missed-words] :route-name :missed-words]
-    ["/app.js"      :get [views/serve-main-js] :route-name :main-js]
-    }))
+             #{["/"             :get [views/index-page] :route-name :home]
+               ["/get_json"     :get [views/get-json] :route-name :get-json]
+               ["/suggest"      :get [views/suggest-handler] :route-name :suggest-handler]
+               ["/edit_word"    :put [interceptors/auth views/put-word] :route-name :put-word]
+               ["/login"        :get  views/index-page :route-name :login]
+               ["/login"        :post [views/login-post] :route-name :login-post]
+               ["/missed-words" :get [views/missed-words] :route-name :missed-words]
+               ["/app.js"       :get [views/serve-main-js] :route-name :main-js]
+               ["/admin"        :get [views/index-page] :route-name :admin]
+               ["/admin/*all"   :get [views/index-page] :route-name :admin-all]
+               }))
 
 (def service {:env                  :prod
               ::http/secure-headers {:content-security-policy-settings {}

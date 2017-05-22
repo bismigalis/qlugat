@@ -47,6 +47,8 @@
                  [org.clojure/java.jdbc "0.7.0-alpha3"]
                  [funcool/clojure.jdbc "0.9.0"]
                  [spyscope "0.1.6"]
+                 [bidi "2.1.1"]
+                 [venantius/accountant "0.2.0"]
                  ])
 
 
