@@ -73,7 +73,10 @@
               [:meta {:charset "utf-8"}]
               [:link {:rel :stylesheet
                       :href "https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css"}]
-              [:style "* {font-family: monospace;}\n dl {margin-bottom:1ex;}
+              [:style "
+li, dd, dt, input {font-family: monospace;}
+pre {word-break: initial;}
+dl {margin-bottom:1ex;}
 stress {color: crimson;font-style: italic;}
 @keyframes spin {
     0% { transform: rotate(0deg); }
