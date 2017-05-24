@@ -1,3 +1,5 @@
-The OpenShift `diy` cartridge documentation can be found at:
+Online dictionary written using Pedestal, Re-frame
 
-http://openshift.github.io/documentation/oo_cartridge_guide.html#diy
+Demo:
+
+https://qlugat-bismi.rhcloud.com/
