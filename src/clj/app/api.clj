@@ -6,14 +6,26 @@
 
 
 (defn sql-get-nearest-word [word]
-  (let [stem (get-stem word)
-        stems (map #(subs %1 0 %2) (repeat stem) (range (count stem) 0 -1))]
+  (let [;;stem (get-stem word)
+        words (map #(subs %1 0 %2) (repeat word) (range (count word) 0 -1))]
     (into [(str "SELECT * FROM word WHERE "
-                (->> stems
-                     (map (constantly "stem=?"))
+                (->> words
+                     (map (constantly "word=?"))
                      (interpose "OR")
                      (clojure.string/join " ")))]
-          stems)))
+          words)))
+
+
+#_(defn sql-get-nearest-stem [word]
+    (let [stem (get-stem word)
+          stems (map #(subs %1 0 %2) (repeat stem) (range (count stem) 0 -1))]
+      (into [(str "SELECT * FROM word WHERE "
+                  (->> stems
+                       (map (constantly "stem=?"))
+                       (interpose "OR")
+                       (clojure.string/join " ")))]
+            stems)))
+
 
 (defn lengthiest [words]
   (def WORDS words)

@@ -34,11 +34,9 @@
     (if-not (= word (:word found-word))
       (api/log-word (:logdb request) word (:word found-word)))
     (if (empty? found-word)
-      (do
-        {:status 404
-         :headers {"Content-Type" "application/json; charset=utf-8"}
-         :body (json/write-str {:message "Word not found"})})
-
+      {:status 404
+       :headers {"Content-Type" "application/json; charset=utf-8"}
+       :body (json/write-str {:message "Word not found"})}
       {:status 200
        :headers {"Content-Type" "application/json; charset=utf-8"}
        :body (json/write-str found-word)}
