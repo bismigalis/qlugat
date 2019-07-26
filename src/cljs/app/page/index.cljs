@@ -36,20 +36,7 @@
 ;;                        (goog.events/listen HistoryEventType/NAVIGATE #(handle-url-change %))
 ;;                        (.setEnabled true)))
 
-(defn update-wordlist
-  "Given word, updates wordlist with entries that
-  starts with word"
-  [stem len]
-  (let [f (if (<= len 4)
-            ;;(fn [x] (filter #(<= (count %) 4) x))
-            (partial take 20)
-            identity)
-        l (vec (f (d/get-list-by-token @s/SUGGEST-DB stem)))]
-    (reset! s/POS (if (empty? l) -1 0))
-    (reset! s/DICT-ENTRY {})
-    (reset! s/OTHER-DICT-ENTRY {})
-    (reset! s/LIST l)
-    ))
+
 
 #_(defn reset-wordlist []
   (reset! POS -1)
@@ -88,6 +75,21 @@
                                    404 {}))
           )))
 
+(defn update-wordlist
+  "Given word, updates wordlist with entries that
+  starts with word"
+  [stem len]
+  (let [f (if (<= len 4)
+            (partial take 20)
+            identity)
+        l (vec (f (d/get-list-by-token @s/SUGGEST-DB stem)))]
+    (reset! s/POS (if (empty? l) -1 0))
+    (reset! s/DICT-ENTRY {})
+    (reset! s/OTHER-DICT-ENTRY {})
+    (reset! s/LIST l)
+    (when (= 1 (count l))
+      (get-article (-> l first :word)))
+    ))
 
 ;; update wordlist widget when edit word in input widget
 (go-loop []
@@ -346,6 +348,7 @@
 (defn InputWord []
   [:input
        {:type :search
+        :autocomplete "disabled"
         :auto-focus true
         :id "search-input"
         :class :form-control
@@ -354,10 +357,15 @@
                         (rf/dispatch [:set-current-word (.-target.value %)])
                         (a/put! s/WORDS-CH (.-target.value %)))
         :on-key-down (fn [e]
+                        
                         (case (.-keyCode e)
                           13 (get-article (if (> @s/POS -1) (get-word-by-pos @s/POS) @(rf/subscribe [:get-current-word])))
-                          38 (if (> @s/POS 0) (swap! s/POS dec))
-                          40 (if (< (inc @s/POS) (count @s/LIST)) (swap! s/POS inc))
+                          38 (do
+                                (.preventDefault e) 
+                                (if (> @s/POS 0) (swap! s/POS dec)))
+                          40 (do
+                                (.preventDefault e)
+                                (if (< (inc @s/POS) (count @s/LIST)) (swap! s/POS inc)))
                           ""
                           )
                         )}])
